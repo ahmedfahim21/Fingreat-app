@@ -16,6 +16,7 @@ from templates import FEW_SHOT_PROMPT_EXAMPLES_TEMPLATE, FEW_SHOT_PROMPT_TEMPLAT
 load_dotenv()
 from upstox_client.feeder.proto import MarketDataFeed_pb2 as pb
 from flask import Flask, Response, jsonify, request, stream_with_context
+from flask_cors import CORS
 
 from templates import (
     FEW_SHOT_PROMPT_TEMPLATE,
@@ -33,6 +34,7 @@ from templates import (
 load_resources()
 # Initialize Flask app
 app = Flask(__name__)
+CORS(app)  # This enables CORS for all routes
 
 # Global variable to store market data
 market_data = {}
