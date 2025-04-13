@@ -28,7 +28,6 @@ def get_stock_price(company_name: str, input_date: str, data_folder: str = "./st
 
     # Construct the file path
     csv_file = os.path.join(data_folder, f"{company_name}.csv")
-
     # Check if the file exists
     if not os.path.exists(csv_file):
         print(f"Error: Data file {csv_file} not found.")
@@ -53,10 +52,7 @@ def get_stock_price(company_name: str, input_date: str, data_folder: str = "./st
     return stock_details
 
 
-# if __name__ == "__main__":
-#     print("Fetching stock price data...")
-#     result = get_stock_price_range("TCS", "2021-03-30", "2023-04-04")
-#     print(result)
-#     if result is not None and not result.empty:
-#         print(f"Found {len(result)} days of data")
-#         print(result.head())  # Print first 5 rows to check the data
+if __name__ == "__main__":
+    print("Fetching stock price data...")
+    result = get_stock_price("TCS", "2021-03-30")
+    print(result)
