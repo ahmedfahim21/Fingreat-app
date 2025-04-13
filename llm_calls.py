@@ -29,21 +29,21 @@ def query_gemini(prompt):
     response = model.generate_content(prompt)
     return response.text
 
-def query_groq(prompt):
-    time.sleep(5) 
-    chat_completion = client.chat.completions.create(
-    messages=[
-        {"role": "system", "content": "Return all the answers in valid json"},
-        {
-            "role": "user",
-            "content": prompt,
-        }
-    ],
-        model="llama-3.3-70b-specdec",
-    )
+# def query_groq(prompt):
+#     time.sleep(5) 
+#     chat_completion = client.chat.completions.create(
+#     messages=[
+#         {"role": "system", "content": "Return all the answers in valid json"},
+#         {
+#             "role": "user",
+#             "content": prompt,
+#         }
+#     ],
+#         model="llama-3.3-70b-specdec",
+#     )
 
-    result = chat_completion.choices[0].message.content
-    return result
+#     result = chat_completion.choices[0].message.content
+#     return result
 
 
 if __name__ == "__main__":

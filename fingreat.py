@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import json
 import pandas as pd
-from llm_calls import query_gemini, query_groq, query_open_ai
+from llm_calls import query_gemini, query_open_ai
 from fetch_stock_price_data_utils import get_stock_price
 from similarity_search import search_similar
 from company_financials import generate_financial_report
