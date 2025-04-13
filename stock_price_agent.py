@@ -36,4 +36,4 @@ def query_stock_price_agent(company_name, start_date, end_date):
     return query_gemini(prompt)
 
 
-query_stock_price_agent("TCS", "2021-03-30", "2023-04-04")
+print(query_stock_price_agent("TCS", "2021-03-30", "2023-04-04"))
