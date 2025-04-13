@@ -5,6 +5,8 @@
 :root {
   --background: #ffffff; /* White as primary background */
   --foreground: #171717;
+  --primary: #4780d4; /* Blue */
+  --primary-foreground: #ffffff; /* White text on blue */
   --font-sans: Arial, Helvetica, sans-serif;
   --font-mono: "Courier New", Courier, monospace;
 }

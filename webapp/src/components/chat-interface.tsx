@@ -114,7 +114,7 @@ export function ChatInterface({ selectedStock }: ChatInterfaceProps) {
           <form
             onSubmit={handleSubmit}
             className={cn(
-              "relative flex items-center rounded-md border p-2 text-sm shadow-sm border-zinc-700"
+              "relative flex items-center rounded-md border py-2 px-4 text-sm shadow-sm border-zinc-700 h-14"
             )}
             aria-label="Chat input form"
           >

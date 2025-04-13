@@ -1,14 +1,27 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { StockList } from "@/components/stock-list"
 import { ChatInterface } from "@/components/chat-interface"
-import { nifty50Stocks } from "@/lib/stock-data"
+import { fetchAndUpdateStockData, nifty50Stocks } from "@/lib/stock-data"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
 
 export function StockDashboard() {
   const [selectedStock, setSelectedStock] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      await fetchAndUpdateStockData();
+      console.log("Stock data updated");
+    };
+
+    fetchData(); // Initial fetch on load
+
+    const intervalId = setInterval(fetchData, 10000); // Fetch every 10 seconds
+
+    return () => clearInterval(intervalId); // Cleanup on unmount
+  }, []);
 
   return (
     <div className="flex w-full h-full m-2 p-2 flex-col bg-zinc-950 text-white rounded-2xl shadow-lg">
