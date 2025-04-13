@@ -11,9 +11,7 @@ def get_stock_price(company_name: str, input_date: str, data_folder: str = "./st
     Parameters:
     
     - company_name (str): The company name as per the JSON mapping.
-    - day (str): The day in format 'DD'.
-    - month (str): The month in format 'MM'.
-    - year (str): The year in format 'YYYY'.
+    - input_date (str): The date in format 'YYYY-MM-DD'.
     - data_folder (str): Path to the folder containing CSV files.
 
     Returns:
@@ -21,7 +19,7 @@ def get_stock_price(company_name: str, input_date: str, data_folder: str = "./st
     """
     
     date_str = input_date.split(" ")[0] 
-    date=date_str
+    date = date_str
     # Get the symbol for the company
     company_name = company_name.upper()
     if company_name not in nifty_50_companies:
@@ -54,8 +52,61 @@ def get_stock_price(company_name: str, input_date: str, data_folder: str = "./st
 
     return stock_details
 
+def get_stock_price_range(company_name: str, start_date: str, end_date: str, data_folder: str = "./stock_price"):
+    """
+    Fetches stock price details (Open, High, Low, Close, Volume) for a given company over a date range.
+    
+    Parameters:
+    - company_name (str): The company name as per the nifty_50_companies list.
+    - start_date (str): The start date in format 'YYYY-MM-DD'.
+    - end_date (str): The end date in format 'YYYY-MM-DD'.
+    - data_folder (str): Path to the folder containing CSV files.
+
+    Returns:
+    - DataFrame: Stock price details (Date, Open, High, Low, Close, Volume) or None if not found.
+    """
+    
+    # Get the symbol for the company
+    company_name = company_name.upper()
+    if company_name not in nifty_50_companies:
+        print(f"Error: Symbol not found for {company_name}.")
+        return None
+
+    # Construct the file path
+    csv_file = os.path.join(data_folder, f"{company_name}.csv")
+
+    # Check if the file exists
+    if not os.path.exists(csv_file):
+        print(f"Error: Data file {csv_file} not found.")
+        return None
+
+    # Read the CSV file
+    try:
+        df = pd.read_csv(csv_file)
+        # Ensure date column is properly formatted
+        df['Date'] = pd.to_datetime(df['Date']).dt.date
+        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+        end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+    except Exception as e:
+        print(f"Error processing {csv_file}: {e}")
+        return None
+    
+    # Filter for the date range
+    stock_data = df[(df['Date'] >= start_date) & (df['Date'] <= end_date)]
+    
+    if stock_data.empty:
+        print(f"No data found for {company_name} between {start_date} and {end_date}.")
+        return None
+
+    # Sort by date, ascending
+    stock_data = stock_data.sort_values(by='Date')
+    
+    # Return the DataFrame with selected columns
+    return stock_data[["Date", "Open", "High", "Low", "Close", "Volume"]]
+
 
 if __name__ == "__main__":
-    result = get_stock_price("TCS", "2021-03-01 11:05:00.000")
-    if result:
-        print("Stock Data:", result)
+    result = get_stock_price_range("TCS", "2021-03-30", "2021-04-04")
+    if result is not None and not result.empty:
+        print(f"Found {len(result)} days of data")
+        print(result.head())  # Print first 5 rows to check the data
