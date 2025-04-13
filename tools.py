@@ -82,7 +82,7 @@ def get_company_background_information_tool(company):
     result = query_gemini(prompt)
     return result
 
-def view_upstox_account_balance():
+def view_upstox_account_balance_tool():
     access_token = os.getenv("UPSTOX_ACCESS_TOKEN")
     url = 'https://api.upstox.com/v2/user/get-funds-and-margin?segment=SEC'
 
@@ -98,7 +98,7 @@ def view_upstox_account_balance():
         return data["data"]["equity"]["available_margin"]
     return 0
 
-def place_upstox_order(instrument_token, order_type, quantity, price, transaction_type):
+def place_upstox_order_tool(instrument_token, order_type, quantity, price, transaction_type):
     access_token = os.getenv("UPSTOX_ACCESS_TOKEN")
     url = 'https://api.upstox.com/v2/order/place'
 
@@ -136,9 +136,26 @@ def place_upstox_order(instrument_token, order_type, quantity, price, transactio
         print(f"Error placing order: {response.status_code} - {response.text}")
         return None
 
+def get_current_market_price_tool(instrument_token):
+    access_token = os.getenv("UPSTOX_ACCESS_TOKEN")
+
+    url = 'https://api.upstox.com/v2/market-quote/ltp?instrument_key={instrument_token}'.format(instrument_token=instrument_token)
+    headers = {
+        'Accept': 'application/json',
+        'Authorization': f'Bearer {access_token}'
+    }
+
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        data = response.json()
+        return data["data"][list(data["data"].keys())[0]]["last_price"]
+    else:
+        print(f"Error fetching market price: {response.status_code} - {response.text}")
+        return None
 
 # print(get_stock_price_range_tool("TCS", "2021-03-30", "2023-04-04")
 # print(get_company_financials_tool("HDFCBANK"))
 # print(get_company_background_information_tool("TCS"))
 # print(view_upstox_account_balance())
-print(place_upstox_order("NSE_EQ|INE669E01016", "LIMIT", 1, 5, "BUY"))
+# print(place_upstox_order("NSE_EQ|INE669E01016", "LIMIT", 1, 5, "BUY"))
+# print(get_current_market_price("NSE_EQ|INE669E01016"))
