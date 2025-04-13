@@ -96,7 +96,7 @@ def view_upstox_account_balance_tool():
     if response.status_code == 200:
         data = response.json()
         return data["data"]["equity"]["available_margin"]
-    return 0
+    return 100
 
 def place_upstox_order_tool(instrument_token, order_type, quantity, price, transaction_type):
     access_token = os.getenv("UPSTOX_ACCESS_TOKEN")
@@ -156,6 +156,6 @@ def get_current_market_price_tool(instrument_token):
 # print(get_stock_price_range_tool("TCS", "2021-03-30", "2023-04-04")
 # print(get_company_financials_tool("HDFCBANK"))
 # print(get_company_background_information_tool("TCS"))
-# print(view_upstox_account_balance())
+# print(view_upstox_account_balance_tool())
 # print(place_upstox_order("NSE_EQ|INE669E01016", "LIMIT", 1, 5, "BUY"))
 # print(get_current_market_price("NSE_EQ|INE669E01016"))
