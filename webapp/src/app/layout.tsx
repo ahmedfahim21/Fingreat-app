@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils"
-import { TooltipProvider } from "@/components/ui/tooltip"
 import { Inter, Open_Sans } from "next/font/google"
 import type { ReactNode } from "react"
 import "./globals.css";
+import { CompanyProvider } from "@/hooks/use-company";
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -25,11 +25,8 @@ export default function Layout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body className={cn("flex min-h-svh flex-col antialiased", openSans.className)}>
-        <TooltipProvider delayDuration={0}>{children}</TooltipProvider>
+        <CompanyProvider>{children}</CompanyProvider>
       </body>
     </html>
   )
 }
-
-
-import './globals.css'
