@@ -23,9 +23,55 @@ def query_open_ai(prompt):
 
     return response.output[1].content[0].text
 
+
+class APIKeyManager:
+    def __init__(self, key_count=8, requests_per_minute=15):
+        self.keys = []
+        self.last_used_times = []
+        
+        # Load API keys
+        for i in range(1, key_count + 1):
+            key = os.getenv(f"GEMINI_API_KEY_{i}")
+            if key:
+                self.keys.append(key)
+                self.last_used_times.append(0)
+        
+        self.current_index = 0
+        self.seconds_per_request = 60 / requests_per_minute
+        
+    def get_next_available_key(self):
+        start_index = self.current_index
+        
+        while True:
+            # Check if enough time has passed for the current key
+            current_time = time.time()
+            time_since_last_use = current_time - self.last_used_times[self.current_index]
+            
+            if time_since_last_use >= self.seconds_per_request:
+                # This key is available
+                key = self.keys[self.current_index]
+                self.last_used_times[self.current_index] = current_time
+                
+                # Move to the next key for the next request
+                self.current_index = (self.current_index + 1) % len(self.keys)
+                
+                return key
+            else:
+                # This key needs more time, try the next one
+                self.current_index = (self.current_index + 1) % len(self.keys)
+                
+                # If we've checked all keys and come back to the start, wait for the first key to become available
+                if self.current_index == start_index:
+                    wait_time = self.seconds_per_request - time_since_last_use + 0.1  # Add a small buffer
+                    time.sleep(wait_time)
+
+# Initialize the key manager
+key_manager = APIKeyManager()
+
 def query_gemini(prompts, system_prompt=None):
     """
-    Queries the Gemini model with an optional system prompt.
+    Queries the Gemini model with an optional system prompt,
+    using a rotation of API keys to avoid rate limiting.
 
     Args:
         prompt (str): The user prompt to send to the model.
@@ -34,7 +80,13 @@ def query_gemini(prompts, system_prompt=None):
     Returns:
         str: The model's response.
     """
-    # time.sleep(5)
+    # Get the next available API key
+    api_key = key_manager.get_next_available_key()
+    
+    # Configure genai with the current key
+    genai.configure(api_key=api_key)
+    
+    # Create the model with the current API key
     model = genai.GenerativeModel("gemini-2.0-flash-001")
     
     # Combine system prompt and user prompt if system_prompt is provided
@@ -43,9 +95,7 @@ def query_gemini(prompts, system_prompt=None):
     else:
         full_prompt = prompts
 
-
-    # print(full_prompt)
-
+    # Send the request
     response = model.generate_content(full_prompt)
     return response.text
     
