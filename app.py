@@ -17,6 +17,7 @@ load_dotenv()
 from upstox_client.feeder.proto import MarketDataFeed_pb2 as pb
 from flask import Flask, Response, jsonify, request, stream_with_context
 from flask_cors import CORS
+from fetch_latest_price_for_csv import fetch_price_for_company
 
 from templates import (
     FEW_SHOT_PROMPT_TEMPLATE,
@@ -311,10 +312,18 @@ def process_news():
 
     return Response(stream_with_context(generate()), mimetype='application/json')
 
+
+@app.route('/time_series_price', methods=['GET'])
+#date in YYYY-MM-DD format
+def get_time_series_price():
+    company = request.args.get('company')
+    from_date = request.args.get('from_date')
+    to_date = request.args.get('to_date')
+    return fetch_price_for_company(company, from_date, to_date)
+
 if __name__ == '__main__':
     # Start the market data fetcher in a background thread
     import threading
-    import time
     background_thread = threading.Thread(target=start_background_task)
     background_thread.daemon = True
     background_thread.start()

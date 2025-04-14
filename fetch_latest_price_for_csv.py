@@ -25,7 +25,9 @@ http = urllib3.PoolManager()
 def get_access_token():
     return os.getenv("UPSTOX_ACCESS_TOKEN")
 
-def fetch_price_for_company(company, access_token, from_date, to_date):
+def fetch_price_for_company(company, from_date, to_date):
+    print(f"Fetching data for {company} from {from_date} to {to_date}")
+    access_token = get_access_token()
     base_url = "https://api.upstox.com/v2/historical-candle"
     interval = "day"
     url = f"{base_url}/{INSTRUMENT_KEYS[company]}/{interval}/{to_date}/{from_date}"
@@ -42,7 +44,8 @@ def fetch_price_for_company(company, access_token, from_date, to_date):
         ]
         return formatted_data
     else:
-        print(f"Error fetching data for {company}: {response.status}")
+        error_details = json.loads(response.data.decode('utf-8')) if response.data else {}
+        print(f"Error fetching data for {company}: {response.status}, Details: {error_details}")
         return []
 
 def generate_csv_locally(data, company):
@@ -58,12 +61,11 @@ def generate_csv_locally(data, company):
             writer.writerow(row[:-1])  # Skip the last value (oi)
 
 def main():
-    access_token = get_access_token()
     for company in INSTRUMENT_KEYS:
         print(f"Fetching data for: {company}")
-        r1 = fetch_price_for_company(company, access_token, from_date_1, to_date_1)
-        r2 = fetch_price_for_company(company, access_token, from_date_2, to_date_2)
-        r3 = fetch_price_for_company(company, access_token, from_date_3, to_date_3)
+        r1 = fetch_price_for_company(company, from_date_1, to_date_1)
+        r2 = fetch_price_for_company(company, from_date_2, to_date_2)
+        r3 = fetch_price_for_company(company, from_date_3, to_date_3)
         all_data = r3 + r2 + r1
         generate_csv_locally(all_data, company)
         print(f"Saved CSV for {company} with {len(all_data)} rows")
