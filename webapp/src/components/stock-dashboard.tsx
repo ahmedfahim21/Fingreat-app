@@ -1,14 +1,29 @@
 "use client"
 
-import { useState } from "react"
-import { StockList } from "@/components/stock-list"
+import { useEffect, useState } from "react"
+import { Stock, StockList } from "@/components/stock-list"
 import { ChatInterface } from "@/components/chat-interface"
-import { nifty50Stocks } from "@/lib/stock-data"
-import { cn } from "@/lib/utils"
+import { fetchStocksData } from "@/lib/stock-data"
 import Image from "next/image"
 
 export function StockDashboard() {
+  const [stockData, setStockData] = useState<Stock[]>([])
+  const [loading, setLoading] = useState(true)
   const [selectedStock, setSelectedStock] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await fetchStocksData(); 
+      setStockData(data);
+      setLoading(false);
+    };
+
+    fetchData(); // Initial fetch on load
+
+    const intervalId = setInterval(fetchData, 10000); // Fetch every 10 seconds
+
+    return () => clearInterval(intervalId); // Cleanup on unmount
+  }, []);
 
   return (
     <div className="flex w-full h-full m-2 p-2 flex-col bg-zinc-950 text-white rounded-2xl shadow-lg">
@@ -21,11 +36,19 @@ export function StockDashboard() {
 
       <div className="flex flex-row gap-2 p-2 h-full overflow-y-auto">
         <div className="relative w-1/4 h-full overflow-y-auto border-r border-zinc-800">
+        {loading? (
+          <div className="absolute inset-0 flex items-center justify-center bg-zinc-900 bg-opacity-50">
+            <div className="loader"></div>
+          </div>
+        )
+        : (
+
           <StockList
-            stocks={nifty50Stocks}
+            stocks={stockData}
             onSelectStock={(symbol) => setSelectedStock(symbol)}
             selectedStock={selectedStock}
           />
+        )}
         </div>
 
         <div className="w-3/4 bg-zinc-900 p-4">
