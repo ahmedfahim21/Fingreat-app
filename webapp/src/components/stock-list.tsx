@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { StockCard } from "@/components/stock-card"
 import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
-interface Stock {
+export interface Stock {
   symbol: string
   name: string
   price: number
@@ -24,28 +24,6 @@ export function StockList({ stocks, onSelectStock, selectedStock }: StockListPro
   const [searchQuery, setSearchQuery] = useState("")
   const [stockData, setStockData] = useState<Stock[]>(stocks)
 
-  // Simulate real-time stock price updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setStockData((prevStocks) =>
-        prevStocks.map((stock) => {
-          const priceFluctuation = parseFloat(((Math.random() - 0.5) * 1.5).toFixed(2))
-          const newPrice = parseFloat((stock.price + priceFluctuation).toFixed(2))
-          const newChange = parseFloat((newPrice - stock.price).toFixed(2))
-          const newChangePercent = parseFloat(((newChange / stock.price) * 100).toFixed(2))
-
-          return {
-            ...stock,
-            price: newPrice,
-            change: newChange,
-            changePercent: newChangePercent,
-          }
-        }),
-      )
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [])
 
   const filteredStocks = stockData.filter((stock) =>
     `${stock.name} ${stock.symbol}`.toLowerCase().includes(searchQuery.toLowerCase()),
