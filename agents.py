@@ -462,6 +462,8 @@ MASTER_AGENT_PROMPT = """
     response_to_agent field is the query which will be sent to the agent.
     response_to_user field is the response you will give to the user if you are not delegating to any agent.
     Agent names are: stock_price_agent, financial_metrics_agent, company_background_agent, trading_agent. These agent names should only be used in agent field.
+    
+    Don't say you are an AI Agent who doesn't know the answer, try to estimate if not guesstimate the result.
 """
 
 def master_agent(user_id, query, news = None, movement_prediction=None, explanation=None, company=None):
