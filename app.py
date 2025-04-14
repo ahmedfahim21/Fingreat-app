@@ -8,6 +8,7 @@ import websockets
 from google.protobuf.json_format import MessageToDict
 from dotenv import load_dotenv
 
+from agents import clear_conversation_history, get_conversation_history, master_agent
 from fetch_stock_price_data_utils import get_stock_price
 from fingreat import fetch_financials, generate_factors, generate_timeseries_nlp_representations_for_examples, get_knowledge_graph_summary, get_nifty50_companies_from_news_stocks, get_nlp_representation_last_n_working_days, get_other_day_stock, search_similar_news, to_json
 from llm_calls import query_gemini
@@ -313,13 +314,44 @@ def process_news():
     return Response(stream_with_context(generate()), mimetype='application/json')
 
 
-@app.route('/time_series_price', methods=['GET'])
 #date in YYYY-MM-DD format
+@app.route('/time_series_price', methods=['GET'])
 def get_time_series_price():
     company = request.args.get('company')
     from_date = request.args.get('from_date')
     to_date = request.args.get('to_date')
     return fetch_price_for_company(company, from_date, to_date)
+
+@app.route('/<user_id>/agents/<agent_name>/conversations', methods=['GET'])
+def get_conversations(user_id, agent_name):
+    conversations = get_conversation_history(user_id, agent_name)
+    return jsonify(conversations)
+
+@app.route('/<user_id>/agents/<agent_name>/conversations', methods=['DELETE'])
+def clear_conversations(user_id, agent_name):
+    clear_conversation_history(user_id, agent_name)
+    return jsonify({"message": "Conversations cleared successfully"}), 200
+
+
+@app.route('/<user_id>/agents/master_agent', methods=['POST'])
+def query_master_agent(user_id):
+    data = request.get_json()
+    
+    movement_prediction, explanation, news = (data.get('movement_prediction', None), data.get('explanation', None), data.get('news', None))
+    if (movement_prediction is None or explanation is None or news is None) and not (movement_prediction is None and explanation is None and news is None):
+        return jsonify({"error": "Either provide all of movement_prediction, explanation, and news, or none of them"}), 400
+
+    
+    company = data.get('company', None)
+    if not company:
+        return jsonify({"error": "Please send company name"}), 400
+    
+    query = data.get('query', None)
+    if not query:
+        return jsonify({"error": "Please send user query"}), 400
+    
+    response = master_agent(user_id, query, movement_prediction = movement_prediction, explanation = explanation, news=news, company = company)
+    return response
 
 if __name__ == '__main__':
     # Start the market data fetcher in a background thread
@@ -329,6 +361,6 @@ if __name__ == '__main__':
     background_thread.start()
     
     # Start the Flask application
-    app.run(debug=False, host='0.0.0.0', port=8000)
+    app.run(debug=True, host='0.0.0.0', port=8000)
 
 

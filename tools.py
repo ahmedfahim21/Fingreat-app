@@ -3,13 +3,14 @@ import pandas as pd
 import os
 import requests
 from company_financials import generate_financial_report
+from fetch_latest_price_for_csv import fetch_price_for_company
 from templates import KG_NODES_MAPPING
 from llm_calls import query_gemini
 import json
 
 nifty_50_companies = ['HDFCBANK', 'RELIANCE', 'ICICIBANK', 'INFY', 'ITC', 'BHARTIARTL', 'TCS', 'LT', 'AXISBANK', 'SBIN', 'M&M', 'KOTAKBANK', 'HINDUNILVR', 'BAJFINANCE', 'NTPC', 'SUNPHARMA', 'TATAMOTORS', 'HCLTECH', 'MARUTI', 'TRENT', 'POWERGRID', 'TITAN', 'ASIANPAINT', 'TATASTEEL', 'BAJAJ-AUTO', 'ULTRACEMCO', 'COALINDIA', 'ONGC', 'HINDALCO', 'BAJAJFINSV', 'ADANIPORTS', 'GRASIM', 'BEL', 'SHRIRAMFIN', 'TECHM', 'JSWSTEEL', 'NESTLEIND', 'INDUSINDBK', 'CIPLA', 'SBILIFE', 'DRREDDY', 'TATACONSUM', 'HDFCLIFE', 'WIPRO', 'ADANIENT', 'HEROMOTOCO', 'BRITANNIA', 'APOLLOHOSP', 'BPCL', 'EICHERMOT']
 
-def get_stock_price_range_tool(company_name: str, start_date: str, end_date: str, data_folder: str = "./stock_price"):
+def get_stock_price_range_tool(company_name: str, start_date: str, end_date: str):
     """
     Fetches stock price details (Open, High, Low, Close, Volume) for a given company over a date range.
     
@@ -17,48 +18,13 @@ def get_stock_price_range_tool(company_name: str, start_date: str, end_date: str
     - company_name (str): The company name as per the nifty_50_companies list.
     - start_date (str): The start date in format 'YYYY-MM-DD'.
     - end_date (str): The end date in format 'YYYY-MM-DD'.
-    - data_folder (str): Path to the folder containing CSV files.
 
     Returns:
     - DataFrame: Stock price details (Date, Open, High, Low, Close, Volume) or None if not found.
     """
-    
-    # Get the symbol for the company
-    company_name = company_name.upper()
-    if company_name not in nifty_50_companies:
-        print(f"Error: Symbol not found for {company_name}.")
-        return None
-
-    # Construct the file path
-    csv_file = os.path.join(data_folder, f"{company_name}.csv")
-
-    # Check if the file exists
-    if not os.path.exists(csv_file):
-        print(f"Error: Data file {csv_file} not found.")
-        return None
-
-    # Read the CSV file
-    try:
-        df = pd.read_csv(csv_file)
-        # Ensure date column is properly formatted
-        df['Date'] = pd.to_datetime(df['Date']).dt.date
-        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
-        end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
-    except Exception as e:
-        print(f"Error processing {csv_file}: {e}")
-        return None
-    
-    # Filter for the date range
-    stock_data = df[(df['Date'] >= start_date) & (df['Date'] <= end_date)]
-    
-    if stock_data.empty:
-        print(f"No data found for {company_name} between {start_date} and {end_date}.")
-        return None
-
-    # Sort by date, ascending
-    stock_data = stock_data.sort_values(by='Date')
-    
-    # Return the DataFrame with selected columns
+    result = fetch_price_for_company(company_name, start_date, end_date)
+    columns = ["Date", "Open", "High", "Low", "Close", "Volume", "0"]
+    stock_data = pd.DataFrame(result, columns=columns)
     return stock_data[["Date", "Open", "High", "Low", "Close", "Volume"]]
 
 def get_company_financials_tool(company): 
@@ -90,13 +56,11 @@ def view_upstox_account_balance_tool():
         'Accept': 'application/json',
         'Authorization': f'Bearer {access_token}'
     }
-
     response = requests.get(url, headers=headers)
-
     if response.status_code == 200:
         data = response.json()
         return data["data"]["equity"]["available_margin"]
-    return 100
+    return 0
 
 def place_upstox_order_tool(instrument_token, order_type, quantity, price, transaction_type):
     access_token = os.getenv("UPSTOX_ACCESS_TOKEN")
@@ -153,7 +117,7 @@ def get_current_market_price_tool(instrument_token):
         print(f"Error fetching market price: {response.status_code} - {response.text}")
         return None
 
-# print(get_stock_price_range_tool("TCS", "2021-03-30", "2023-04-04")
+# print(get_stock_price_range_tool("TCS", "2021-03-30", "2023-04-04"))
 # print(get_company_financials_tool("HDFCBANK"))
 # print(get_company_background_information_tool("TCS"))
 # print(view_upstox_account_balance_tool())
