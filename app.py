@@ -123,7 +123,8 @@ async def fetch_market_data_loop():
                                 # Store in global market data
                                 market_data[symbol] = {
                                     "price": ltp,
-                                    "change": percent_change
+                                    "change": round(abs(cp-ltp), 2),
+                                    "percentage_change": percent_change
                                 }
         
         except Exception as e:
@@ -353,6 +354,10 @@ def query_master_agent(user_id):
     response = master_agent(user_id, query, movement_prediction = movement_prediction, explanation = explanation, news=news, company = company)
     return response
 
+@app.route('/', methods=['GET'])
+def index():
+    return "Welcome to FinGReaT!"
+
 if __name__ == '__main__':
     # Start the market data fetcher in a background thread
     import threading
@@ -361,6 +366,6 @@ if __name__ == '__main__':
     background_thread.start()
     
     # Start the Flask application
-    app.run(debug=False, host='0.0.0.0', port=8000)
+    app.run(debug=True, host='0.0.0.0', port=8000)
 
 
