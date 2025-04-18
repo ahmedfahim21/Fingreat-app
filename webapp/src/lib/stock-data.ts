@@ -57,6 +57,7 @@ export const symbolToNameMap: Record<string, string> = {
 // --- Single function to fetch and transform backend data ---
 export async function fetchStocksData(): Promise<Array<{ symbol: string; name: string; price: number; change: number; changePercent: number }>> {
   const response = await fetch(process.env.NEXT_PUBLIC_API_URL + "/market_prices");
+
   const rawData: Record<string, { price: number; change: number }> = await response.json();
 
   return Object.entries(rawData).map(([symbol, data]) => {
@@ -76,6 +77,7 @@ export async function fetchStocksData(): Promise<Array<{ symbol: string; name: s
 export async function getStockData(symbol: string) {
   try {
     const response = await fetch(process.env.NEXT_PUBLIC_API_URL+ `/market_price/${symbol}`);
+
     if (!response.ok) {
       throw new Error(`Failed to fetch data for symbol: ${symbol}`);
     }
@@ -113,7 +115,6 @@ export async function fetchStockPriceHistory(symbol: string, startDate: string, 
     }
 
     const rawData = await response.json();
-
     return rawData;
   } catch (error) {
     console.error("Error fetching stock price history:", error);

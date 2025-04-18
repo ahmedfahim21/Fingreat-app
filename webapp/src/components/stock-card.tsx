@@ -1,55 +1,70 @@
-"use client"
-
+import { memo } from "react"
+import { Stock } from "./stock-list"
 import { cn } from "@/lib/utils"
-import { TrendingUp, TrendingDown } from "lucide-react"
+import { TrendingDown, TrendingUp } from "lucide-react"
 
 interface StockCardProps {
-  stock: {
-    symbol: string
-    name: string
-    price: number
-    change: number
-    changePercent: number
-  }
+  stock: Stock
   onClick: () => void
   isSelected: boolean
 }
 
-export function StockCard({ stock, onClick, isSelected }: StockCardProps) {
+// Use memo to prevent unnecessary re-renders
+export const StockCard = memo(function StockCard({ stock, onClick, isSelected }: StockCardProps) {
   const isPositive = stock.change >= 0
-
+  
   return (
     <div
-      onClick={onClick}
       className={cn(
-        "group relative cursor-pointer rounded-xl border border-zinc-800 bg-zinc-900/70 px-4 py-3 shadow-sm transition-all hover:scale-[1.015] hover:border-zinc-700 hover:shadow-md",
-        isSelected ? "bg-blue-400/20 ring-2 ring-blue-400" : "",
+        "flex cursor-pointer flex-col rounded-xl p-3 transition-all duration-200",
+        isSelected 
+          ? "bg-blue-600/10 border border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.1)]" 
+          : "bg-zinc-900 border border-zinc-800 hover:bg-zinc-800/80"
       )}
+      onClick={onClick}
     >
-      <div className="flex items-center justify-between">
-        {/* Left: Stock Symbol and Name */}
-        <div className="flex flex-col">
-          <h3 className="text-md font-semibold tracking-wide text-white">{stock.symbol}</h3>
-          <p className="truncate text-xs text-zinc-400">{stock.name}</p>
-        </div>
-
-        {/* Right: Price and Change */}
-        <div className="flex flex-col items-end">
-          <p className="text-base font-medium text-white">
-            ₹{stock.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-          </p>
-          <div
-            className={cn(
-              "mt-0.5 flex items-center text-sm font-medium",
-              isPositive ? "text-green-500" : "text-red-500",
-            )}
-          >
-            {isPositive ? <TrendingUp className="mr-1 h-4 w-4" /> : <TrendingDown className="mr-1 h-4 w-4" />}
-            {isPositive ? "+" : ""}
-            {stock.change.toFixed(2)} ({stock.changePercent.toFixed(2)}%)
-          </div>
+      <div className="flex justify-between items-center mb-1.5">
+        <span className="font-semibold text-white">{stock.symbol}</span>
+        <span 
+          className={cn(
+            "font-medium",
+            isPositive ? "text-green-500" : "text-red-500"
+          )}
+        >
+          ₹{stock.price.toFixed(2)}
+        </span>
+      </div>
+      
+      <div className="flex justify-between items-center">
+        <span className="text-xs text-zinc-400 truncate max-w-[60%] mr-2">{stock.name}</span>
+        <div 
+          className={cn(
+            "text-xs px-2 py-0.5 rounded-full font-medium flex items-center",
+            isPositive 
+              ? "bg-green-500/10 text-green-500 border border-green-500/20" 
+              : "bg-red-500/10 text-red-500 border border-red-500/20"
+          )}
+        >
+          {isPositive 
+            ? <TrendingUp className="mr-1 h-3 w-3" /> 
+            : <TrendingDown className="mr-1 h-3 w-3" />
+          }
+          <span>
+            {isPositive ? "+" : ""}{stock.change.toFixed(2)} ({isPositive ? "+" : ""}{stock.changePercent.toFixed(2)}%)
+          </span>
         </div>
       </div>
     </div>
   )
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  // Only re-render if one of these conditions is true
+  return (
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.stock.symbol === nextProps.stock.symbol &&
+    prevProps.stock.name === nextProps.stock.name &&
+    prevProps.stock.price === nextProps.stock.price &&
+    prevProps.stock.change === nextProps.stock.change &&
+    prevProps.stock.changePercent === nextProps.stock.changePercent
+  )
+})

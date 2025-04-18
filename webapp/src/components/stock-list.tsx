@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, memo } from "react"
 import { useState } from "react"
 import { StockCard } from "@/components/stock-card"
 import { Input } from "@/components/ui/input"
@@ -20,12 +21,18 @@ interface StockListProps {
   selectedStock: string | null
 }
 
-export function StockList({ stocks, onSelectStock, selectedStock }: StockListProps) {
+// Use memo to prevent unnecessary re-renders
+export const StockList = memo(function StockList({ 
+  stocks, 
+  onSelectStock, 
+  selectedStock 
+}: StockListProps) {
   const [searchQuery, setSearchQuery] = useState("")
-  const [stockData, setStockData] = useState<Stock[]>(stocks)
-
-
-  const filteredStocks = stockData.filter((stock) =>
+  
+  // Remove the redundant stockData state and use the props directly
+  // This prevents the component from maintaining its own copy that gets out of sync
+  
+  const filteredStocks = stocks.filter((stock) =>
     `${stock.name} ${stock.symbol}`.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
@@ -37,10 +44,10 @@ export function StockList({ stocks, onSelectStock, selectedStock }: StockListPro
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
           <Input
-        placeholder="Search by name or symbol..."
-        className="w-full rounded-md border border-zinc-800 bg-zinc-900 px-8 py-2 text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-700"
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by name or symbol..."
+            className="w-full rounded-md border border-zinc-800 bg-zinc-900 px-8 py-2 text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-700"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
       </div>
@@ -64,4 +71,4 @@ export function StockList({ stocks, onSelectStock, selectedStock }: StockListPro
       </ScrollArea>
     </div>
   )
-}
+})
