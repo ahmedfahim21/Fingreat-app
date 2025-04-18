@@ -123,7 +123,7 @@ async def fetch_market_data_loop():
                                 # Store in global market data
                                 market_data[symbol] = {
                                     "price": ltp,
-                                    "change": round(cp-ltp, 2),
+                                    "change": round(ltp-cp, 2),
                                     "percentage_change": percent_change
                                 }
         
