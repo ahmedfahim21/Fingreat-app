@@ -80,7 +80,7 @@ export function StockDashboard() {
     fetchData(true);
     
     // Use 10000 ms (10 seconds) as intended
-    const intervalId = setInterval(() => fetchData(false), 2000);
+    const intervalId = setInterval(() => fetchData(false), 100000);
     
     return () => clearInterval(intervalId);
   }, [fetchData]);

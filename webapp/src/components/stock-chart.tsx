@@ -78,7 +78,7 @@ export function StockChart({ symbol }: { symbol: string }) {
           }));
           
           // Sort chronologically
-          historyData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+          historyData.sort((a: { date: string | number | Date }, b: { date: string | number | Date }) => new Date(a.date).getTime() - new Date(b.date).getTime())
           setHistory(historyData)
           setError(null)
         }
@@ -325,12 +325,6 @@ export function StockChart({ symbol }: { symbol: string }) {
                       className="rounded-md bg-zinc-900 px-2 py-1 text-xs text-white border border-zinc-700"
                     />
                   </div>
-                  <button 
-                    onClick={() => setDatePickerOpen(false)}
-                    className="text-xs py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 rounded-md transition-colors"
-                  >
-                    Apply
-                  </button>
                 </div>
               </div>
             )}
