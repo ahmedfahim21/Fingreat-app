@@ -14,7 +14,7 @@ from_date_2 = "2011-01-01"
 to_date_2 = "2020-12-31"
 
 from_date_3 = "2021-01-01"
-to_date_3 = "2025-04-14"
+to_date_3 = "2025-04-28"
 
 from templates import INSTRUMENT_KEYS
 
