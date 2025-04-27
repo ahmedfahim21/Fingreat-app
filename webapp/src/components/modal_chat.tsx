@@ -904,7 +904,7 @@ export function AgentChatUI({ companyTicker }: ChatUIProps) {
               initial={{ scale: 0.95 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.95 }}
-              className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl p-5 max-w-sm w-full"
+              className="bg-zinc-900 border border-zinc-700 rounded-2xl shadow-xl p-5 max-w-sm w-full"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center gap-3 mb-3">
@@ -927,14 +927,14 @@ export function AgentChatUI({ companyTicker }: ChatUIProps) {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowConfirmDialog(false)}
-                  className="text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800"
+                  className="text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 rounded-xl"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={confirmClear}
                   size="sm"
-                  className="bg-red-600 hover:bg-red-700 text-white"
+                  className="bg-red-600 hover:bg-red-700 text-white rounded-xl"
                 >
                   Clear
                 </Button>

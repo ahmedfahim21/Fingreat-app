@@ -28,6 +28,7 @@ const LottieAnimation = dynamic(() => import('./lottie-animation'), {
 
 interface ChatInterfaceProps {
   selectedStock: string | null
+  onProcessingStateChange?: (isProcessing: boolean) => void
 }
 
 type UIMessage =
@@ -120,7 +121,7 @@ const LoadingAnimation = ({ currentStage }: { currentStage: { stage: number; tot
   );
 };
 
-export function ChatInterface({ selectedStock }: ChatInterfaceProps) {
+export function ChatInterface({ selectedStock, onProcessingStateChange }: ChatInterfaceProps) {
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [messages, setMessages] = useState<UIMessage[]>([])
@@ -266,10 +267,14 @@ export function ChatInterface({ selectedStock }: ChatInterfaceProps) {
   useEffect(() => {
     if (interfaceState === "PROCESSING") {
       setIsProcessingActive(true);
+      // Notify parent component about processing state
+      onProcessingStateChange?.(true);
     } else {
       setIsProcessingActive(false);
+      // Notify parent component about processing state
+      onProcessingStateChange?.(false);
     }
-  }, [interfaceState]);
+  }, [interfaceState, onProcessingStateChange]);
 
   // Fetch stock info
   useEffect(() => {
@@ -673,7 +678,7 @@ function handleParsedMessage(msg: any) {
                   variant="outline"
                   className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white rounded-full"
                 >
-                  <RefreshCcw className="size-4 mr-2" />
+                  <RefreshCcw className="size-4" />
                   New Analysis
                 </Button>
                 <Button
@@ -684,20 +689,21 @@ function handleParsedMessage(msg: any) {
                   }}
                   className="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white rounded-full"
                 >
-                   <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  width="16" 
-                  height="16" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                  className="text-white mr-2"
-                >
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1-2 2z"></path>
-                </svg>
+                 <svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  strokeWidth="2"
+  strokeLinecap="round"
+  strokeLinejoin="round"
+  className="text-white"
+>
+  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+</svg>
+
                   Continue with AI Agent
                 </Button>
               </div>

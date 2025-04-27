@@ -10,12 +10,24 @@ import { Dialog, DialogTrigger } from "./ui/dialog"
 import { DialogBox } from "./agent-dialog"
 import { useCompany } from "@/hooks/use-company"
 import Link from "next/link"
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { AlertCircle } from "lucide-react"
 
 export function StockDashboard() {
   const [stockData, setStockData] = useState<Stock[]>([])
   const [loading, setLoading] = useState(true)
   const { company, setCompany } = useCompany()
   const [initialLoad, setInitialLoad] = useState(true)
+  const [showNoCompanyAlert, setShowNoCompanyAlert] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
 
   // Use useCallback to prevent recreation of fetch function on each render
   const fetchData = useCallback(async (isInitialLoad = false) => {
@@ -73,7 +85,7 @@ export function StockDashboard() {
         setLoading(false);
       }
     }
-  }, []);  // Remove stockData dependency to prevent excessive re-renders
+  }, []);  
 
   useEffect(() => {
     // Initial fetch with loading indicator
@@ -84,6 +96,13 @@ export function StockDashboard() {
     
     return () => clearInterval(intervalId);
   }, [fetchData]);
+
+  // Handler for clicking the Talk to AI Agent button
+  const handleAgentClick = () => {
+    if (!company) {
+      setShowNoCompanyAlert(true);
+    }
+  };
 
   return (
     <div className="flex w-full h-full m-2 p-2 flex-col bg-zinc-950 text-white rounded-3xl shadow-xl">
@@ -144,11 +163,36 @@ export function StockDashboard() {
               </Link>
             </div>
           </div>
-          {/* End of Trade with section */}
-          <DialogTrigger asChild>
+          
+          {/* Conditionally render DialogTrigger only if company is selected */}
+          {company ? (
+            <DialogTrigger asChild>
+              <Button
+                className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 active:from-blue-600 active:to-indigo-700 text-white rounded-full px-4 py-2 font-medium transition-all duration-300 hover:scale-105 active:scale-105 border border-blue-400/20 hover:shadow-lg active:shadow-inner"
+              >
+                <span className="flex items-center gap-2">
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="16" 
+                    height="16" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    className="text-white"
+                  >
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                  Talk to AI Agent
+                </span>
+              </Button>
+            </DialogTrigger>
+          ) : (
             <Button
               className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 active:from-blue-600 active:to-indigo-700 text-white rounded-full px-4 py-2 font-medium transition-all duration-300 hover:scale-105 active:scale-105 border border-blue-400/20 hover:shadow-lg active:shadow-inner"
-              onClick={() => {}}
+              onClick={handleAgentClick}
             >
               <span className="flex items-center gap-2">
                 <svg 
@@ -168,7 +212,7 @@ export function StockDashboard() {
                 Talk to AI Agent
               </span>
             </Button>
-          </DialogTrigger>
+          )}
         </div>
 
         <div className="flex flex-row gap-3 p-2 h-full overflow-y-auto">
@@ -182,16 +226,44 @@ export function StockDashboard() {
                 stocks={stockData}
                 onSelectStock={(symbol) => setCompany(symbol)}
                 selectedStock={company}
+                disabled={isProcessing}
               />
             )}
           </div>
 
           <div className="w-3/4 bg-zinc-900 p-5 rounded-2xl shadow-lg">
-            <ChatInterface selectedStock={company} />
+            <ChatInterface 
+              selectedStock={company} 
+              onProcessingStateChange={setIsProcessing}
+            />
           </div>
         </div>
-        <DialogBox />
+        
+        {/* Only render DialogBox if company is selected */}
+        {company && <DialogBox />}
       </Dialog>
+
+      {/* Alert Dialog for when no company is selected */}
+      <AlertDialog open={showNoCompanyAlert} onOpenChange={setShowNoCompanyAlert}>
+        <AlertDialogContent className="!rounded-2xl bg-zinc-900 border border-zinc-700 text-white">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-amber-500/10">
+                <AlertCircle size={20} className="text-amber-400" />
+              </div>
+              <AlertDialogTitle className="text-white">Select a Company First</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-zinc-300">
+              Please select a company from the sidebar before starting a conversation with the AI agent.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl">
+              Got it
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

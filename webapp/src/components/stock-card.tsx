@@ -7,10 +7,11 @@ interface StockCardProps {
   stock: Stock
   onClick: () => void
   isSelected: boolean
+  disabled?: boolean // Add disabled prop
 }
 
 // Use memo to prevent unnecessary re-renders
-export const StockCard = memo(function StockCard({ stock, onClick, isSelected }: StockCardProps) {
+export const StockCard = memo(function StockCard({ stock, onClick, isSelected, disabled = false }: StockCardProps) {
   const isPositive = stock.change >= 0
   
   return (
@@ -19,9 +20,10 @@ export const StockCard = memo(function StockCard({ stock, onClick, isSelected }:
         "flex cursor-pointer flex-col rounded-xl p-3 transition-all duration-200",
         isSelected 
           ? "bg-blue-600/10 border border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.1)]" 
-          : "bg-zinc-900 border border-zinc-800 hover:bg-zinc-800/80"
+          : "bg-zinc-900 border border-zinc-800 hover:bg-zinc-800/80",
+        disabled && "opacity-60 cursor-not-allowed hover:bg-zinc-900" // Add disabled styling
       )}
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick} // Prevent click when disabled
     >
       <div className="flex justify-between items-center mb-1.5">
         <span className="font-semibold text-white">{stock.symbol}</span>
@@ -61,6 +63,7 @@ export const StockCard = memo(function StockCard({ stock, onClick, isSelected }:
   // Only re-render if one of these conditions is true
   return (
     prevProps.isSelected === nextProps.isSelected &&
+    prevProps.disabled === nextProps.disabled && // Add disabled to comparison
     prevProps.stock.symbol === nextProps.stock.symbol &&
     prevProps.stock.name === nextProps.stock.name &&
     prevProps.stock.price === nextProps.stock.price &&
