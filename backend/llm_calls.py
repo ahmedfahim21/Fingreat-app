@@ -13,12 +13,17 @@ client = Groq(
     api_key=os.environ.get("GROQ_API_KEY"),
 )
 
-def query_open_ai(prompt):
+def query_open_ai(prompts, system_prompt=None):
+    if system_prompt:
+        full_prompt = f"{system_prompt}\n\n{prompts}"
+    else:
+        full_prompt = prompts
+
     client = openai.OpenAI(api_key=os.environ.get("OPEN_AI_KEY"))
     
     response = client.responses.create(
     model="o3-mini",
-    input=prompt
+    input=full_prompt
     )
 
     return response.output[1].content[0].text

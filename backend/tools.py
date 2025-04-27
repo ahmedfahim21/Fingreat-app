@@ -100,7 +100,7 @@ def place_upstox_order_tool(instrument_token, order_type, quantity, price, trans
         print(f"Error placing order: {response.status_code} - {response.text}")
         return None
 
-def get_current_market_price_tool(instrument_token):
+def get_live_market_price_tool(instrument_token):
     access_token = os.getenv("UPSTOX_ACCESS_TOKEN")
 
     url = 'https://api.upstox.com/v2/market-quote/ltp?instrument_key={instrument_token}'.format(instrument_token=instrument_token)

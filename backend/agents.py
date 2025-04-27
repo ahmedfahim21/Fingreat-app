@@ -2,9 +2,9 @@
 # 1. Stock Price Agent - get_stock_price_range_tool - Read past stock data for a company and answer questions accordingly
 # 2. Financial Report Agent - get_company_financials_tool - Read past financial data for a company and answer questions accordingly
 # 3. Company Background Agent - get_company_background_information_tool - Read past company background information and answer questions accordingly
-# 4. Upstox Trading Agent - view_upstox_account_balance_tool, place_upstox_order_tool, get_current_market_price_tool - Make Trades on the Upstox platform on behalf of the user
+# 4. Upstox Trading Agent - view_upstox_account_balance_tool, place_upstox_order_tool, get_live_market_price_tool - Make Trades on the Upstox platform on behalf of the user
 
-from llm_calls import query_gemini
+from llm_calls import query_gemini, query_open_ai
 import sys
 from datetime import datetime, timedelta
 import json
@@ -16,7 +16,7 @@ from tools import (
     get_company_background_information_tool,
     view_upstox_account_balance_tool,
     place_upstox_order_tool,
-    get_current_market_price_tool
+    get_live_market_price_tool
 )
 
 from templates import INSTRUMENT_KEYS
@@ -69,12 +69,12 @@ TOOL_DESCRIPTIONS = {
         },
         "returns": "Order ID string if successful, otherwise None."
     },
-    "get_current_market_price_tool": {
-        "description": "Fetches the current Last Traded Price (LTP) for a given instrument on Upstox.",
+    "get_live_market_price_tool": {
+        "description": "Fetches the live Last Traded Price (LTP) for a given instrument on Upstox.",
         "parameters": {
             "instrument_token": "Unique instrument key (e.g., 'NSE_EQ|INE669E01016')."
         },
-        "returns": "A float representing the current market price of the instrument."
+        "returns": "A float representing the live market price of the instrument."
     }
 }
 
@@ -110,27 +110,40 @@ Here is the company background:
 Be very consice and to the point. Do not add any extra information. Answer in a paragraph.
 """
 
-TRADING_SYSTEM_PROMPT = f"""You are a trading assistant with access to live account data and trading tools via Upstox. 
+TRADING_SYSTEM_PROMPT = f"""
+You are a highly reliable Upstox trading assistant.
 
-You have access to 3 functions which you can invoke:
-- view_upstox_account_balance_tool - {TOOL_DESCRIPTIONS["view_upstox_account_balance_tool"]}
-- place_upstox_order_tool - {TOOL_DESCRIPTIONS["place_upstox_order_tool"]}
-- get_current_market_price_tool - {TOOL_DESCRIPTIONS["get_current_market_price_tool"]}
+You have access to the following tools:
+- view_upstox_account_balance_tool: {TOOL_DESCRIPTIONS["view_upstox_account_balance_tool"]}
+- place_upstox_order_tool: {TOOL_DESCRIPTIONS["place_upstox_order_tool"]}
+- get_live_market_price_tool: {TOOL_DESCRIPTIONS["get_live_market_price_tool"]}
 
-Respond in this JSON format:
+You must always strictly respond ONLY in the following JSON format:
 {{
-    "function": "<function_name>",
-    "arguments": {{
-        "key1": "value1",
-        "key2": "value2"
-    }},
-    "response": "<response_to_user>"
+  "function": "<function_name>",     // If you need to call a tool, specify the function name.
+  "arguments": {{
+    "key1": "value1",
+    "key2": "value2"
+  }},
+  "response": "<message to user>"
 }}
 
-Here is a company to instrument map if you need it: {INSTRUMENT_KEYS}
+Rules you must strictly follow:
+1. If you do not have enough information to call a function, ask the user for the missing details in the "response" field and leave "function" and "arguments" empty.
+2. Before executing any trade (buy/sell), explicitly ask the user for confirmation (example: "Please confirm if you would like to proceed with buying X quantity of Y at Z price. Reply Yes to confirm.").
+3. Never assume or hallucinate. If a tool does not exist for an action the user asks, politely explain it in the "response" and do NOT invent a function call.
+4. Only call one function at a time. After a function returns, you can decide if more action is needed.
+5. Always make sure the user has sufficient balance before placing an order.
+6. Think carefully before deciding to call a function. If unsure, first clarify with the user.
+7. MAKE SURE TO READ ALL THE CONVERSATION DATA BEFORE CALLING FOR A FUNCTION AGAIN. THE DATA MIGHT ALREADY BE PRESENT.
 
-Please only reply with the JSON response. Do not add any extra information or explanation. If you need to ask the user for more information, do so in the response field.
-IMPORTANT: Please make sure to confirm the transaction with the user before executing any trading functions. And if the query required no function call to be executed leave it empty.
+If you understand the user's intent and have all required information, respond with a tool call.  
+If not, ask the user for clarification without making any function call.
+
+Never, under any circumstances, output anything except the specified JSON structure.
+
+In case you need it, here are the company name to instrument keys mappings: {INSTRUMENT_KEYS}.
+
 
 """
 
@@ -147,59 +160,12 @@ user_conversations = {
 }
 
 
-# user_conversations = {
-#     "stock_agent": {
-#         "user123": [
-#             {"user": "What was the highest price of TCS in the last month?", "assistant": "Based on the data from 2025-03-15 to 2025-04-14, the highest price for TCS was ₹4000.50 on April 5th, 2025."},
-#             {"user": "What about the lowest?", "assistant": "The lowest price during that period was ₹3850.20 on March 20th, 2025."}
-#         ],
-#         "user456": [
-#             {"user": "Show me the stock trend for Infosys this year.", "assistant": "Fetching stock data for Infosys from 2025-01-01 to 2025-04-14. Please wait..."},
-#             {"user": "What was the closing price on March 1st?", "assistant": "The closing price for Infosys on March 1st, 2025 was ₹1700.80."}
-#         ]
-#     },
-#     "financial_agent": {
-#         "user123": [
-#             {"user": "What was the revenue growth for Reliance in the last quarter?", "assistant": "In the last reported quarter, Reliance showed a revenue growth of 15% compared to the previous quarter, as per the financial report."},
-#             {"user": "What about the yearly performance?", "assistant": "The yearly performance indicates a 10% increase in revenue compared to the previous fiscal year."}
-#         ],
-#         "user789": [
-#             {"user": "Give me a summary of Tata Motors' financial health.", "assistant": "Tata Motors' financial report indicates a strong quarterly performance driven by increased sales in the commercial vehicle segment. Their yearly performance also shows positive growth, although there are some concerns regarding rising raw material costs."}
-#         ]
-#     },
-#     "background_agent": {
-#         "user123": [
-#             {"user": "Tell me about the CEO of HDFC Bank.", "assistant": "The current CEO of HDFC Bank is Sashidhar Jagdishan."},
-#             {"user": "When was the company founded?", "assistant": "HDFC Bank was founded in August 1994."}
-#         ],
-#         "userabc": [
-#             {"user": "What sectors does ITC operate in?", "assistant": "ITC operates in multiple sectors including Fast Moving Consumer Goods (FMCG), Hotels, Agri-Business, Paperboards & Packaging."},
-#             {"user": "Who are their main competitors in the FMCG sector?", "assistant": "In the FMCG sector, ITC's main competitors include Hindustan Unilever, Britannia Industries, and Nestle India."}
-#         ]
-#     },
-#     "trading_agent": {
-#         "user123": [
-#             {"user": "What is my current account balance?", "assistant": '{ "function": "view_upstox_account_balance_tool", "arguments": {}, "response": "Checking your account balance..." }'},
-#             {"user": "[Tool result for view_upstox_account_balance_tool]", "assistant": "₹78,560.25"},
-#             {"user": "Buy 2 shares of TCS at market price.", "assistant": '{ "function": "get_current_market_price_tool", "arguments": { "instrument_token": "NSE_EQ|INE476A01014" }, "response": "Fetching current market price for TCS..." }'},
-#             {"user": "[Tool result for get_current_market_price_tool]", "assistant": "₹3955.70"},
-#             {"user": "Confirm buy order for 2 shares of TCS at ₹3955.70.", "assistant": '{ "function": "place_upstox_order_tool", "arguments": { "instrument_token": "NSE_EQ|INE476A01014", "order_type": "MARKET", "quantity": 2, "price": 0, "transaction_type": "BUY" }, "response": "Placing buy order for 2 shares of TCS at market price. Order confirmation pending..." }'},
-#             {"user": "[Tool result for place_upstox_order_tool]", "assistant": "Order ID: 202504141155XYZ"}
-#         ],
-#         "userxyz": [
-#             {"user": "Sell 5 shares of Infosys at a limit price of ₹1720.", "assistant": '{ "function": "place_upstox_order_tool", "arguments": { "instrument_token": "NSE_EQ|INE009A01021", "order_type": "LIMIT", "quantity": 5, "price": 1720.0, "transaction_type": "SELL" }, "response": "Placing sell order for 5 shares of Infosys at ₹1720. Please confirm." }'},
-#             {"user": "Confirm sell order.", "assistant": '{ "function": "place_upstox_order_tool", "arguments": { "instrument_token": "NSE_EQ|INE009A01021", "order_type": "LIMIT", "quantity": 5, "price": 1720.0, "transaction_type": "SELL" }, "response": "Placing sell order for 5 shares of Infosys at ₹1720. Order confirmation pending..." }'},
-#             {"user": "[Tool result for place_upstox_order_tool]", "assistant": "Order ID: 202504141201ABC"}
-#         ]
-#     }
-# }
-
 # ----------------------------------------------
 # Agent 1: Stock Price Agent
 # ----------------------------------------------
 
 MIN_DATE = "2003-01-01"
-MAX_DATE = "2025-04-14"
+MAX_DATE = "2025-04-28"
 last_stock_data_context = {}  # Stores last data context per user
 
 def check_if_data_required(query, company_name, existing_start=None, existing_end=None):
@@ -278,8 +244,8 @@ def stock_price_agent(user_id, company_name, query):
     existing_context = last_stock_data_context.get(user_id, "")
     existing_start, existing_end = extract_dates_from_prompt(existing_context)  # Your utility to pull from the stored string
 
-    needs_data = check_if_data_required(query, company_name, existing_start, existing_end)
-
+    # needs_data = check_if_data_required(query, company_name, existing_start, existing_end)
+    needs_data = True
 
     if needs_data:
         # Fresh stock data fetch
@@ -356,11 +322,11 @@ def company_background_agent(user_id, company_name, query):
 # ----------------------------------------------
 def trading_agent(user_id, query, company=None):
     # Get the current account balance once at the start.
-    user_account_balance = view_upstox_account_balance_tool()
-    system_prompt = (
-        TRADING_SYSTEM_PROMPT + "\n" +
-        f"The stock the user wants to buy might be {company} and the User's current account balance is ₹{user_account_balance}. Cancel the order if sufficient funds are not available."
-    )
+    # user_account_balance = view_upstox_account_balance_tool()
+    # system_prompt = (
+    #     TRADING_SYSTEM_PROMPT + "\n" +
+    #     f"The stock the user wants to buy might be {company} and the User's current account balance is ₹{user_account_balance}. Cancel the order if sufficient funds are not available."
+    # )
 
     # Maintain the conversation history.
     conv = user_conversations["trading_agent"].setdefault(user_id, [])
@@ -368,12 +334,15 @@ def trading_agent(user_id, query, company=None):
 
     # Loop until the agent response does not ask for a function call.
     while True:
+        # print("Conversations")
+        # print(conv)
+
         conversation_text = "\n".join(
             [f"User: {c['user']}\nAssistant: {c.get('assistant', '')}" for c in conv]
         )
         
         # Query Gemini with the current system prompt and conversation history.
-        agent_reply = query_gemini(system_prompt=system_prompt, prompts=conversation_text)
+        agent_reply = query_gemini(system_prompt=TRADING_SYSTEM_PROMPT, prompts=conversation_text)
 
         try:
             agent_json = to_json(agent_reply)
@@ -385,15 +354,14 @@ def trading_agent(user_id, query, company=None):
         function_name = agent_json.get("function")
         response_text = agent_json.get("response", "")
 
+        print("Calling function:", function_name, response_text)
+
         # Record the assistant's response.
         conv[-1]["assistant"] = response_text
 
-        if function_name:
+        if function_name in TOOL_DESCRIPTIONS.keys():
             # If Gemini indicates a tool should be called, prepare the arguments.
             tool_args = agent_json.get("arguments", {})
-            print("Calling function:", function_name)
-            print("With args:", tool_args)
-            print("Response text:", response_text)
 
             try:
                 tool_result = call_trading_tools(function_name, tool_args)
@@ -404,7 +372,7 @@ def trading_agent(user_id, query, company=None):
                 print(f"Error: {e}")
 
             # Append the result of the tool call to the conversation.
-            conv.append({"user": f"[Tool result for {function_name} is {tool_result}]"})
+            conv.append({"user": f"The tool {function_name} returned: {tool_result}. Please summarize the result to the user. Can we reply to the user now or do we need have to make some more tool calls?"})
         else:
             # No tool is being called, so break out of the loop.
             break
@@ -413,12 +381,11 @@ def trading_agent(user_id, query, company=None):
     return response_text
 
 
-
 def call_trading_tools(name, args):
     if name == "view_upstox_account_balance_tool":
         return view_upstox_account_balance_tool()
-    elif name == "get_current_market_price_tool":
-        return get_current_market_price_tool(**args)
+    elif name == "get_live_market_price_tool":
+        return get_live_market_price_tool(**args)
     elif name == "place_upstox_order_tool":
         return place_upstox_order_tool(**args)
     else:
@@ -449,7 +416,7 @@ MASTER_AGENT_PROMPT = """
     1. Stock Price Agent - Read past stock data for a company and answer questions accordingly
     2. Financial Report Agent - Read past financial data for a company and answer questions accordingly
     3. Company Background Agent - Read past company background information and answer questions accordingly
-    4. Upstox Trading Agent - Handles tasks related to making trades/view account details on the Upstox platform on behalf of the user
+    4. Upstox Trading Agent - Handles tasks related to viewing the LIVE MARKET PRICE of a company and making trades/view account details on the Upstox platform on behalf of the user
 
     Always respond in this JSON format:
     {{
@@ -458,12 +425,14 @@ MASTER_AGENT_PROMPT = """
         "response_to_user": "<response_to_user>"
     }}
 
-    If you are delegating to a specific agent, include the agent name. Otherwise leave it blank and add your response in the response_to_user field.
+    If you are delegating to a specific agent, include the agent name. Otherwise leave it blank.
     response_to_agent field is the query which will be sent to the agent.
     response_to_user field is the response you will give to the user if you are not delegating to any agent.
     Agent names are: stock_price_agent, financial_metrics_agent, company_background_agent, trading_agent. These agent names should only be used in agent field.
     
-    Don't say you are an AI Agent who doesn't know the answer, try to estimate if not guesstimate the result.
+    NOTE:
+    1. IF YOU ARE DELEGATING TO AN AGENT, THEN response_to_user FIELD DOESN'T NEED TO BE FILLED, LEAVE IT BLANK. ONLY ADD SOME VALUE IN IT IF YOU ARE NOT DELEGATING TO AN AGENT.
+    2. MAKE SURE YOU RELAY THE CORRECT INFORMATION FROM THE USER INPUT QUERY TO THE AGENT. THE AGENTS ARE ALSO AI ASSISTANTS TO HELP YOU ANSWER QUESTIONS.
 """
 
 def master_agent(user_id, query, news = None, movement_prediction=None, explanation=None, company=None):
@@ -475,7 +444,7 @@ def master_agent(user_id, query, news = None, movement_prediction=None, explanat
     additional_prompt = ""
     if news and movement_prediction and explanation:
         additional_prompt = f"""
-        Prior to calling you, the user has already analysed from another AI assitant the impact on {company} of news: \n {news} \n 
+        Prior to calling you, the user has already analysed from another AI assistant the impact of news: \n {news} \n on company {company} \n
         The predicted movement of stock is: \n {movement_prediction} \n
         The explanation provided is: \n {explanation} \n
         You can use this information to better answer the user's query or to delegate to the right agent with this extra information.
@@ -483,7 +452,7 @@ def master_agent(user_id, query, news = None, movement_prediction=None, explanat
 
     system_prompt = MASTER_AGENT_PROMPT + additional_prompt
 
-    print("Master Agent System Prompt:", system_prompt)
+    # print("Master Agent System Prompt:", system_prompt)
 
     result = query_gemini(system_prompt=system_prompt, prompts=conversation_text)
 
@@ -501,7 +470,7 @@ def master_agent(user_id, query, news = None, movement_prediction=None, explanat
             return result
         else:
             conv[-1]["assistant"] = response_to_user
-            return response
+            return response_to_user
 
     except Exception as e:
         conv[-1]["assistant"] = f"Error processing query: {str(e)}"
@@ -528,7 +497,8 @@ if __name__ == "__main__":
     while True:
         query = input("Enter your query: ").strip()
         # try:
-        response = master_agent(user_id, query, company="INFY")
+        response = master_agent(user_id, query)
+        print("Final Response")
         print(response)
         # except Exception as e:
         #     print(f"An error occurred: {e}", file=sys.stderr)
